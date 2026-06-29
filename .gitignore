@@ -1,0 +1,13 @@
+node_modules
+.next
+dist
+.turbo
+.env
+.env.local
+.env.example
+*.tsbuildinfo
+apps/web/nul
+nul
+coverage
+*.log
+.next-dev.*

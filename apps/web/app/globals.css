@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --brand: #6366F1;
+  --brand-hover: #5048E5;
+  --brand-light: #EEF0FE;
+  --page-bg: #F6F7FB;
+  --surface: #FFFFFF;
+  --border: #ECECF3;
+  --text-primary: #16131F;
+  --text-secondary: #8A8A9B;
+  --success: #22C55E;
+  --surface-dark: #1C1B22;
+  --surface-dark-alt: #14141A;
+}
+
+body {
+  margin: 0;
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+@keyframes voice-pulse {
+  0%, 100% { opacity: 0.3; transform: scaleY(0.5); }
+  50% { opacity: 1; transform: scaleY(1); }
+}

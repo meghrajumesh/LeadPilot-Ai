@@ -2,7 +2,7 @@ type StoredChunk = {
   id: string;
   docId: string;
   content: string;
-  vector: number[];
+  vector: Record<string, number>;
 };
 
 export type DocSource = "seed" | "text" | "website" | "file";
@@ -60,12 +60,52 @@ let userDocs: InternalDoc[] = [];
 let ready = false;
 let initLock: Promise<void> | null = null;
 
-function cosineSimilarity(a: number[], b: number[]): number {
+const stopWords = new Set([
+  "a","an","the","is","are","was","were","be","been","being","have","has","had",
+  "do","does","did","will","would","can","could","shall","should","may","might",
+  "must","to","of","in","for","on","with","at","by","from","as","into","through",
+  "during","before","after","above","below","between","out","off","over","under",
+  "again","further","then","once","here","there","when","where","why","how",
+  "all","each","every","both","few","more","most","other","some","such","no",
+  "nor","not","only","own","same","so","than","too","very","just","because",
+  "but","and","or","if","while","that","this","these","those","it","its",
+  "i","me","my","we","our","you","your","he","she","they","them","their",
+  "what","which","who","whom",
+]);
+
+function tokenize(text: string): string[] {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !stopWords.has(w));
+}
+
+function tfidfVector(text: string): Record<string, number> {
+  const terms = tokenize(text);
+  const freq: Record<string, number> = {};
+  for (const t of terms) freq[t] = (freq[t] ?? 0) + 1;
+  const maxFreq = Math.max(...Object.values(freq), 1);
+  for (const key of Object.keys(freq)) {
+    freq[key] = (0.5 + 0.5 * (freq[key] / maxFreq)) * Math.log((chunks.length + 1) / (getDocFreq(key) + 1) + 1);
+  }
+  return freq;
+}
+
+function getDocFreq(term: string): number {
+  let count = 0;
+  for (const c of chunks) if (c.vector[term] !== undefined) count++;
+  return count;
+}
+
+function cosineSimilarity(a: Record<string, number>, b: Record<string, number>): number {
   let dot = 0, na = 0, nb = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    na += a[i] * a[i];
-    nb += b[i] * b[i];
+  for (const key of Object.keys(a)) {
+    const val = a[key];
+    na += val * val;
+    if (b[key] !== undefined) dot += val * b[key];
+  }
+  for (const key of Object.keys(b)) {
+    nb += b[key] * b[key];
   }
   const denom = Math.sqrt(na) * Math.sqrt(nb);
   return denom === 0 ? 0 : dot / denom;
@@ -96,37 +136,12 @@ function splitIntoChunks(text: string): string[] {
   return result;
 }
 
-async function embed(text: string): Promise<number[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
-  const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1/models/embedding-001:embedContent",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      body: JSON.stringify({
-        model: "models/embedding-001",
-        content: { parts: [{ text }] },
-      }),
-    }
-  );
-  if (!res.ok) {
-    throw new Error(`Embedding error (${res.status}): ${await res.text()}`);
-  }
-  const data = await res.json();
-  return data.embedding?.values ?? [];
-}
-
 async function initStore() {
   try {
     for (const doc of SEED_DOCS) {
       const pieces = splitIntoChunks(doc.content);
       for (const piece of pieces) {
-        const vector = await embed(piece);
-        chunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
+        chunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: tfidfVector(piece) });
       }
     }
   } catch (e) {
@@ -149,7 +164,7 @@ export async function retrieve(
   query: string, topK = 3
 ): Promise<{ content: string; score: number }[]> {
   await ensureReady();
-  const qVec = await embed(query);
+  const qVec = tfidfVector(query);
   const scored = chunks
     .map((c) => ({ content: c.content, score: cosineSimilarity(qVec, c.vector) }))
     .sort((a, b) => b.score - a.score);
@@ -160,16 +175,12 @@ export async function addTextDocument(title: string, content: string): Promise<K
   await ensureReady();
   const doc: InternalDoc = {
     id: `user-${crypto.randomUUID()}`,
-    title,
-    content,
-    source: "text",
-    createdAt: new Date().toISOString(),
+    title, content, source: "text", createdAt: new Date().toISOString(),
   };
   const pieces = splitIntoChunks(content);
   const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
-    const vector = await embed(piece);
-    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: tfidfVector(piece) });
   }
   chunks.push(...newChunks);
   userDocs.push(doc);
@@ -196,17 +207,12 @@ export async function addWebsiteDocument(url: string): Promise<KnowledgeDoc> {
   const content = body.slice(0, 50000);
   const doc: InternalDoc = {
     id: `user-${crypto.randomUUID()}`,
-    title,
-    content,
-    source: "website",
-    url,
-    createdAt: new Date().toISOString(),
+    title, content, source: "website", url, createdAt: new Date().toISOString(),
   };
   const pieces = splitIntoChunks(content);
   const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
-    const vector = await embed(piece);
-    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: tfidfVector(piece) });
   }
   chunks.push(...newChunks);
   userDocs.push(doc);
@@ -218,16 +224,12 @@ export async function addFileDocument(filename: string, content: string): Promis
   const doc: InternalDoc = {
     id: `user-${crypto.randomUUID()}`,
     title: filename.replace(/\.[^.]+$/, ""),
-    content,
-    source: "file",
-    filename,
-    createdAt: new Date().toISOString(),
+    content, source: "file", filename, createdAt: new Date().toISOString(),
   };
   const pieces = splitIntoChunks(content);
   const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
-    const vector = await embed(piece);
-    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: tfidfVector(piece) });
   }
   chunks.push(...newChunks);
   userDocs.push(doc);

@@ -97,13 +97,27 @@ function splitIntoChunks(text: string): string[] {
 }
 
 async function embed(text: string): Promise<number[]> {
-  const { GoogleGenAI } = await import("@google/genai");
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  const res = await ai.models.embedContent({
-    model: "embedding-001",
-    contents: [{ role: "user", parts: [{ text }] }],
-  });
-  return res.embeddings?.[0]?.values ?? [];
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY not set");
+  const res = await fetch(
+    "https://generativelanguage.googleapis.com/v1/models/embedding-001:embedContent",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        model: "models/embedding-001",
+        content: { parts: [{ text }] },
+      }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(`Embedding error (${res.status}): ${await res.text()}`);
+  }
+  const data = await res.json();
+  return data.embedding?.values ?? [];
 }
 
 async function initStore() {

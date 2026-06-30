@@ -80,21 +80,15 @@ function tokenize(text: string): string[] {
     .filter((w) => w.length > 1 && !stopWords.has(w));
 }
 
-function tfidfVector(text: string): Record<string, number> {
+function termVector(text: string): Record<string, number> {
   const terms = tokenize(text);
   const freq: Record<string, number> = {};
   for (const t of terms) freq[t] = (freq[t] ?? 0) + 1;
   const maxFreq = Math.max(...Object.values(freq), 1);
   for (const key of Object.keys(freq)) {
-    freq[key] = (0.5 + 0.5 * (freq[key] / maxFreq)) * Math.log((chunks.length + 1) / (getDocFreq(key) + 1) + 1);
+    freq[key] = 0.5 + 0.5 * (freq[key] / maxFreq);
   }
   return freq;
-}
-
-function getDocFreq(term: string): number {
-  let count = 0;
-  for (const c of chunks) if (c.vector[term] !== undefined) count++;
-  return count;
 }
 
 function cosineSimilarity(a: Record<string, number>, b: Record<string, number>): number {
@@ -141,7 +135,7 @@ async function initStore() {
     for (const doc of SEED_DOCS) {
       const pieces = splitIntoChunks(doc.content);
       for (const piece of pieces) {
-        chunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: tfidfVector(piece) });
+        chunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: termVector(piece) });
       }
     }
   } catch (e) {
@@ -164,11 +158,11 @@ export async function retrieve(
   query: string, topK = 3
 ): Promise<{ content: string; score: number }[]> {
   await ensureReady();
-  const qVec = tfidfVector(query);
+  const qVec = termVector(query);
   const scored = chunks
     .map((c) => ({ content: c.content, score: cosineSimilarity(qVec, c.vector) }))
     .sort((a, b) => b.score - a.score);
-  return scored.slice(0, topK).filter((r) => r.score > 0.25);
+  return scored.slice(0, topK).filter((r) => r.score > 0.1);
 }
 
 export async function addTextDocument(title: string, content: string): Promise<KnowledgeDoc> {
@@ -180,7 +174,7 @@ export async function addTextDocument(title: string, content: string): Promise<K
   const pieces = splitIntoChunks(content);
   const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
-    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: tfidfVector(piece) });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: termVector(piece) });
   }
   chunks.push(...newChunks);
   userDocs.push(doc);
@@ -212,7 +206,7 @@ export async function addWebsiteDocument(url: string): Promise<KnowledgeDoc> {
   const pieces = splitIntoChunks(content);
   const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
-    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: tfidfVector(piece) });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: termVector(piece) });
   }
   chunks.push(...newChunks);
   userDocs.push(doc);
@@ -229,7 +223,7 @@ export async function addFileDocument(filename: string, content: string): Promis
   const pieces = splitIntoChunks(content);
   const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
-    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: tfidfVector(piece) });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector: termVector(piece) });
   }
   chunks.push(...newChunks);
   userDocs.push(doc);

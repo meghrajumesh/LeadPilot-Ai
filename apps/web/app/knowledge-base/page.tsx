@@ -204,7 +204,7 @@ export default function KnowledgeBasePage() {
           <CardContent className="p-5">
             {activeTab === "website" && (
               <form className="space-y-3" onSubmit={handleScrape}>
-                <div>
+                <div className="space-y-1.5">
                   <Label htmlFor="url">Website URL</Label>
                   <Input
                     id="url"
@@ -224,7 +224,7 @@ export default function KnowledgeBasePage() {
 
             {activeTab === "file" && (
               <form className="space-y-3" onSubmit={handleUpload}>
-                <div>
+                <div className="space-y-1.5">
                   <Label htmlFor="file">Upload file</Label>
                   <Input
                     ref={fileRef}
@@ -250,7 +250,7 @@ export default function KnowledgeBasePage() {
 
             {activeTab === "text" && (
               <form className="space-y-3" onSubmit={handleAddText}>
-                <div>
+                <div className="space-y-1.5">
                   <Label htmlFor="title">Title</Label>
                   <Input
                     id="title"
@@ -259,7 +259,7 @@ export default function KnowledgeBasePage() {
                     onChange={(e) => setTitle(e.target.value)}
                   />
                 </div>
-                <div>
+                <div className="space-y-1.5">
                   <Label htmlFor="content">Content</Label>
                   <textarea
                     id="content"

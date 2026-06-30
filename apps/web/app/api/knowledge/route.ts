@@ -36,8 +36,9 @@ export async function POST(request: Request) {
     const doc = await addTextDocument(body.title, body.content);
     return NextResponse.json({ success: true, data: doc }, { headers: corsHeaders() });
   } catch (error) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
     logger.error(error);
-    return fail("Unable to add knowledge document", 500);
+    return fail(msg, 500);
   }
 }
 

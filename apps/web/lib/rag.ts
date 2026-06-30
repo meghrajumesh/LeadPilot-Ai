@@ -152,10 +152,12 @@ export async function addTextDocument(title: string, content: string): Promise<K
     createdAt: new Date().toISOString(),
   };
   const pieces = splitIntoChunks(content);
+  const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
     const vector = await embed(piece);
-    chunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
   }
+  chunks.push(...newChunks);
   userDocs.push(doc);
   return toKnowledgeDoc(doc, pieces.length);
 }
@@ -163,6 +165,7 @@ export async function addTextDocument(title: string, content: string): Promise<K
 export async function addWebsiteDocument(url: string): Promise<KnowledgeDoc> {
   await ensureReady();
   const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error(`Failed to fetch URL (${res.status}): ${res.statusText}`);
   const html = await res.text();
   const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
   const title = titleMatch ? titleMatch[1].trim() : new URL(url).hostname;
@@ -186,10 +189,12 @@ export async function addWebsiteDocument(url: string): Promise<KnowledgeDoc> {
     createdAt: new Date().toISOString(),
   };
   const pieces = splitIntoChunks(content);
+  const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
     const vector = await embed(piece);
-    chunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
   }
+  chunks.push(...newChunks);
   userDocs.push(doc);
   return toKnowledgeDoc(doc, pieces.length);
 }
@@ -205,10 +210,12 @@ export async function addFileDocument(filename: string, content: string): Promis
     createdAt: new Date().toISOString(),
   };
   const pieces = splitIntoChunks(content);
+  const newChunks: StoredChunk[] = [];
   for (const piece of pieces) {
     const vector = await embed(piece);
-    chunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
+    newChunks.push({ id: crypto.randomUUID(), docId: doc.id, content: piece, vector });
   }
+  chunks.push(...newChunks);
   userDocs.push(doc);
   return toKnowledgeDoc(doc, pieces.length);
 }

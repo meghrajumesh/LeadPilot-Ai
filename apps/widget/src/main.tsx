@@ -1,6 +1,6 @@
 import React, { Component, type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import type { ApiResponse, ChatResponse, ConversationStartResponse, WidgetConfigResponse, WidgetConfig } from "@leadpilot/types";
+import type { ApiResponse, WidgetConfigResponse, WidgetConfig } from "@leadpilot/types";
 
 type MountOptions = {
   root: ShadowRoot | HTMLElement;
@@ -120,7 +120,6 @@ function Widget({ clientId, apiUrl }: { clientId: string; apiUrl: string }) {
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   const [status, setStatus] = useState<WidgetStatus>("collapsed");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [conversationId, setConversationId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const visitorId = useMemo(createVisitorId, []);
@@ -150,45 +149,49 @@ function Widget({ clientId, apiUrl }: { clientId: string; apiUrl: string }) {
 
   async function openWidget() {
     setStatus("open");
-
-    if (conversationId || !config) {
-      return;
-    }
-
-    try {
-      const data = await requestJson<ConversationStartResponse>(`${apiUrl}/api/widget/conversation/start`, {
-        method: "POST",
-        body: JSON.stringify({ clientId, visitorId })
-      });
-      setConversationId(data.conversationId);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to start conversation");
-      setStatus("error");
-    }
   }
 
   async function sendMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const content = draft.trim();
 
-    if (!content || !conversationId) {
+    if (!content) {
       return;
     }
 
     setDraft("");
-    setMessages((current) => [...current, { id: crypto.randomUUID(), role: "user", content }]);
+    const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content };
+    setMessages((current) => [...current, userMessage]);
     setStatus("loading");
 
     try {
-      const data = await requestJson<ChatResponse>(`${apiUrl}/api/widget/chat`, {
+      const history = [...messages, userMessage];
+      const res = await fetch(`${apiUrl}/api/chat`, {
         method: "POST",
-        body: JSON.stringify({ clientId, conversationId, visitorId, message: content })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: history.map((m) => ({
+            role: m.role === "assistant" ? "model" : "user",
+            content: m.content,
+          })),
+        }),
       });
-      setMessages((current) => [...current, { id: crypto.randomUUID(), role: "assistant", content: data.reply }]);
+      const data = await res.json();
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: "assistant", content: data.reply },
+      ]);
       setStatus("open");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Unable to send message");
-      setStatus("error");
+      setMessages((current) => [
+        ...current,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Sorry, I'm having trouble connecting. Please try again.",
+        },
+      ]);
+      setStatus("open");
     }
   }
 
@@ -232,12 +235,12 @@ function Widget({ clientId, apiUrl }: { clientId: string; apiUrl: string }) {
             <form className="lp-form" onSubmit={sendMessage}>
               <input
                 className="lp-input"
-                disabled={status === "loading" || !conversationId}
+                disabled={status === "loading"}
                 onChange={(event) => setDraft(event.target.value)}
-                placeholder={conversationId ? "Type your message..." : "Connecting..."}
+                placeholder="Type your message..."
                 value={draft}
               />
-              <button className="lp-send" disabled={status === "loading" || !draft.trim() || !conversationId} type="submit">Send</button>
+              <button className="lp-send" disabled={status === "loading" || !draft.trim()} type="submit">Send</button>
             </form>
             <footer className="lp-footer">Powered by LeadPilot</footer>
           </section>

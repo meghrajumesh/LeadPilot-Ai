@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 const helpCards = [
   { title: "Paste before </body>", body: "Install the snippet near the end of your page so it loads after your content.", icon: Code2 },
-  { title: "Keep the client ID", body: "The client ID connects this website to the correct LeadPilot project.", icon: CheckCircle2 },
+  { title: "Keep the widget key", body: "The widget key connects this website to the correct LeadPilot project.", icon: CheckCircle2 },
   { title: "Need help?", body: "Send this guide to your developer or install it through your tag manager.", icon: LifeBuoy }
 ];
 
@@ -36,7 +36,7 @@ export default async function SnippetPage({ params }: { params: { id: string } }
 
   const project = await prisma.project.findFirst({
     where: { id: params.id, workspaceId: membership.workspaceId },
-    select: { name: true, siteUrl: true, clientId: true }
+    select: { id: true, name: true, siteUrl: true, widgetKey: true }
   });
 
   if (!project) {
@@ -56,11 +56,11 @@ export default async function SnippetPage({ params }: { params: { id: string } }
           <h1 className="text-3xl font-bold tracking-tight text-[#111827]">{project.name}</h1>
           <p className="mt-2 text-[#6B7280]">Installation Guide</p>
         </div>
-        <div className="rounded-full bg-[#F3F4F6] px-4 py-2 font-mono text-sm text-[#374151]">Client ID: {project.clientId}</div>
+        <div className="rounded-full bg-[#F3F4F6] px-4 py-2 font-mono text-sm text-[#374151]">Widget Key: {project.widgetKey}</div>
       </div>
 
       <div className="mt-6">
-        <SnippetTabs appUrl={appUrl} clientId={project.clientId} />
+        <SnippetTabs appUrl={appUrl} widgetKey={project.widgetKey} />
       </div>
 
       <section className="mt-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-[#E5E7EB]">

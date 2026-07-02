@@ -1,15 +1,41 @@
 import { NextResponse } from "next/server";
 import { corsHeaders, fail } from "@/lib/api-response";
-import { addTextDocument, addWebsiteDocument, deleteDocument, listDocuments } from "@/lib/rag";
+import { listDocuments, deleteDocument } from "@/lib/rag-supabase";
+import { createClient } from "@/lib/supabase/server";
+import { getSharedPrismaClient } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: corsHeaders() });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const docs = listDocuments();
+    const url = new URL(request.url);
+    const projectId = url.searchParams.get("projectId");
+
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return fail("Unauthorized", 401);
+
+    if (!projectId) return fail("projectId query param is required");
+
+    const prisma = getSharedPrismaClient();
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId: user.id },
+      select: { workspaceId: true },
+    });
+    if (!membership) return fail("No workspace found", 404);
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, workspaceId: membership.workspaceId },
+      select: { id: true },
+    });
+    if (!project) return fail("Project not found or access denied", 403);
+
+    const docs = await listDocuments(projectId);
     return NextResponse.json({ success: true, data: docs }, { headers: corsHeaders() });
   } catch (error) {
     logger.error(error);
@@ -17,38 +43,34 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
-  try {
-    const body = (await request.json()) as {
-      type?: string;
-      title?: string;
-      content?: string;
-      url?: string;
-    };
-
-    if (body.type === "website") {
-      if (!body.url) return fail("url is required");
-      const doc = await addWebsiteDocument(body.url);
-      return NextResponse.json({ success: true, data: doc }, { headers: corsHeaders() });
-    }
-
-    if (!body.title || !body.content) return fail("title and content are required");
-    const doc = await addTextDocument(body.title, body.content);
-    return NextResponse.json({ success: true, data: doc }, { headers: corsHeaders() });
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    logger.error(error);
-    return fail(msg, 500);
-  }
-}
-
 export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url);
-    const id = url.searchParams.get("id");
-    if (!id) return fail("id is required");
-    const deleted = await deleteDocument(id);
-    if (!deleted) return fail("Document not found", 404);
+    const projectId = url.searchParams.get("projectId");
+    const docId = url.searchParams.get("id");
+    if (!docId) return fail("id is required");
+    if (!projectId) return fail("projectId is required");
+
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return fail("Unauthorized", 401);
+
+    const prisma = getSharedPrismaClient();
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId: user.id },
+      select: { workspaceId: true },
+    });
+    if (!membership) return fail("No workspace found", 404);
+
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, workspaceId: membership.workspaceId },
+      select: { id: true },
+    });
+    if (!project) return fail("Project not found or access denied", 403);
+
+    await deleteDocument(projectId, docId);
     return NextResponse.json({ success: true }, { headers: corsHeaders() });
   } catch (error) {
     logger.error(error);

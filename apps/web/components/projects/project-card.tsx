@@ -8,7 +8,7 @@ export function ProjectCard({
     id: string;
     name: string;
     siteUrl: string;
-    clientId: string;
+    widgetKey: string;
     createdAt: Date;
   };
 }) {
@@ -19,7 +19,7 @@ export function ProjectCard({
         <LinkIcon className="h-4 w-4 flex-none" />
         {project.siteUrl}
       </a>
-      <div className="mt-4 rounded-lg bg-[#EDE9FE] px-3 py-2 font-mono text-xs font-semibold text-[#5B21B6]">{project.clientId}</div>
+      <div className="mt-4 rounded-lg bg-[#EDE9FE] px-3 py-2 font-mono text-xs font-semibold text-[#5B21B6]">{project.widgetKey}</div>
       <p className="mt-4 flex items-center gap-2 text-sm text-[#6B7280]">
         <Calendar className="h-4 w-4" />
         {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(project.createdAt)}

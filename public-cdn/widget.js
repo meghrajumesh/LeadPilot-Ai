@@ -5,9 +5,10 @@
     return;
   }
 
-  var clientId = currentScript.getAttribute("data-client-id");
+  var widgetKey = currentScript.getAttribute("data-widget-key");
 
-  if (!clientId) {
+  if (!widgetKey) {
+    console.warn("LeadPilot: missing data-widget-key attribute");
     return;
   }
 
@@ -28,7 +29,7 @@
 
     window.LeadPilotWidget.mount({
       root: shadowRoot,
-      clientId: clientId,
+      widgetKey: widgetKey,
       apiUrl: apiUrl
     });
   }

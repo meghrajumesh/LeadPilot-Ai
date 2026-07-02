@@ -57,6 +57,7 @@ async function main() {
       workspaceId: workspace.id,
       name: "Acme Services",
       siteUrl: "https://example.com",
+      widgetKey: "wgt_demo",
       widgetConfig: {
         color: "#2563eb",
         botName: "Ava",
@@ -68,6 +69,7 @@ async function main() {
       name: "Acme Services",
       siteUrl: "https://example.com",
       clientId: "demo-client-id",
+      widgetKey: "wgt_demo",
       widgetConfig: {
         color: "#2563eb",
         botName: "Ava",

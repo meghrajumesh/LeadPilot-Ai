@@ -4,7 +4,7 @@ import type { ApiResponse, WidgetConfigResponse, WidgetConfig } from "@leadpilot
 
 type MountOptions = {
   root: ShadowRoot | HTMLElement;
-  clientId: string;
+  widgetKey: string;
   apiUrl: string;
 };
 
@@ -45,7 +45,6 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     if (this.state.hasError) {
       return <div className="lp-error">LeadPilot widget could not load.</div>;
     }
-
     return this.props.children;
   }
 }
@@ -53,11 +52,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 function createVisitorId() {
   const storageKey = "leadpilot_visitor_id";
   const existing = window.localStorage.getItem(storageKey);
-
   if (existing) {
     return existing;
   }
-
   const visitorId = crypto.randomUUID();
   window.localStorage.setItem(storageKey, visitorId);
   return visitorId;
@@ -72,11 +69,9 @@ async function requestJson<T>(url: string, init?: RequestInit) {
     }
   });
   const payload = (await response.json()) as ApiResponse<T>;
-
   if (!payload.success) {
     throw new Error(payload.error);
   }
-
   return payload.data;
 }
 
@@ -116,7 +111,7 @@ function styles(color: string) {
   `;
 }
 
-function Widget({ clientId, apiUrl }: { clientId: string; apiUrl: string }) {
+function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
   const [config, setConfig] = useState<WidgetConfig | null>(null);
   const [status, setStatus] = useState<WidgetStatus>("collapsed");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -126,7 +121,7 @@ function Widget({ clientId, apiUrl }: { clientId: string; apiUrl: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    requestJson<WidgetConfigResponse>(`${apiUrl}/api/widget/config?clientId=${encodeURIComponent(clientId)}`)
+    requestJson<WidgetConfigResponse>(`${apiUrl}/api/widget/config?widgetKey=${encodeURIComponent(widgetKey)}`)
       .then((data) => {
         setConfig(data.config);
         setMessages([
@@ -138,10 +133,12 @@ function Widget({ clientId, apiUrl }: { clientId: string; apiUrl: string }) {
         ]);
       })
       .catch((caught: unknown) => {
-        setError(caught instanceof Error ? caught.message : "Unable to load widget");
+        const msg = caught instanceof Error ? caught.message : "Unable to load widget";
+        console.error("[LeadPilot] config fetch failed:", msg);
+        setError(msg);
         setStatus("error");
       });
-  }, [apiUrl, clientId]);
+  }, [apiUrl, widgetKey]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -170,12 +167,20 @@ function Widget({ clientId, apiUrl }: { clientId: string; apiUrl: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          widgetKey: widgetKey,
           messages: history.map((m) => ({
             role: m.role === "assistant" ? "model" : "user",
             content: m.content,
           })),
         }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        console.error(`[LeadPilot] chat error (${res.status}):`, errData.error || res.statusText);
+        throw new Error(errData.error || `Request failed (${res.status})`);
+      }
+
       const data = await res.json();
       setMessages((current) => [
         ...current,
@@ -183,13 +188,12 @@ function Widget({ clientId, apiUrl }: { clientId: string; apiUrl: string }) {
       ]);
       setStatus("open");
     } catch (caught) {
+      const realMsg = caught instanceof Error ? caught.message : String(caught);
+      console.error("[LeadPilot] chat request failed:", realMsg);
+      const friendlyMsg = "Sorry, I ran into a hiccup. Please try again in a moment.";
       setMessages((current) => [
         ...current,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: "Sorry, I'm having trouble connecting. Please try again.",
-        },
+        { id: crypto.randomUUID(), role: "assistant", content: friendlyMsg },
       ]);
       setStatus("open");
     }
@@ -255,11 +259,16 @@ window.LeadPilotWidget = {
     const existingRoot = roots.get(options.root);
     existingRoot?.unmount();
 
+    if (!options.widgetKey) {
+      console.warn("LeadPilot: mount called without widgetKey");
+      return;
+    }
+
     const root = createRoot(options.root);
     roots.set(options.root, root);
     root.render(
       <ErrorBoundary>
-        <Widget apiUrl={options.apiUrl.replace(/\/$/, "")} clientId={options.clientId} />
+        <Widget widgetKey={options.widgetKey} apiUrl={options.apiUrl.replace(/\/$/, "")} />
       </ErrorBoundary>
     );
   }

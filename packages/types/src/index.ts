@@ -11,7 +11,7 @@ export type ApiFailure = {
 export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
 export type WidgetConfig = {
-  clientId: string;
+  widgetKey: string;
   projectName: string;
   color: string;
   botName: string;

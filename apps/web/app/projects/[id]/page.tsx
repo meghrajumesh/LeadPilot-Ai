@@ -28,7 +28,7 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
 
   const project = await prisma.project.findFirst({
     where: { id: params.id, workspaceId: membership.workspaceId },
-    select: { id: true, name: true, clientId: true, siteUrl: true }
+    select: { id: true, name: true, widgetKey: true, siteUrl: true }
   });
 
   if (!project) {
@@ -47,13 +47,15 @@ export default async function ProjectDetailPage({ params }: { params: { id: stri
         <h1 className="mt-2 text-3xl font-bold text-[#111827]">{project.name}</h1>
         <p className="mt-3 break-all text-sm text-[#6B7280]">{project.siteUrl}</p>
         <div className="mt-5 inline-flex rounded-full bg-[#F3F4F6] px-3 py-2 font-mono text-sm text-[#374151]">
-          Client ID: {project.clientId}
+          Widget Key: {project.widgetKey}
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link className="rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-semibold text-white hover:bg-[#5B21B6]" href={`/projects/${project.id}/snippet`}>
             Snippet
           </Link>
-          <span className="rounded-lg border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#6B7280]">Settings coming soon</span>
+          <Link className="rounded-lg border border-[#E5E7EB] px-4 py-2 text-sm font-semibold text-[#6B7280] hover:bg-[#F9FAFB]" href={`/projects/${project.id}/widget`}>
+            Widget Settings
+          </Link>
         </div>
       </section>
     </DashboardLayout>

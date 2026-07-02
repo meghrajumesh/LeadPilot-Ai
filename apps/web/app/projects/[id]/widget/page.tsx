@@ -1,32 +1,65 @@
-export default function WidgetCustomizationPage() {
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { getSharedPrismaClient } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
+import { WidgetSettingsForm } from "./widget-settings-form";
+
+export const dynamic = "force-dynamic";
+
+export default async function WidgetCustomizationPage({ params }: { params: { id: string } }) {
+  const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect(`/login?next=/projects/${params.id}/widget`);
+  }
+
+  const prisma = getSharedPrismaClient();
+  const membership = await prisma.workspaceMember.findFirst({
+    where: { userId: user.id },
+    include: { workspace: { select: { name: true } }, user: { select: { name: true, email: true } } }
+  });
+
+  if (!membership) {
+    redirect("/signup");
+  }
+
+  const project = await prisma.project.findFirst({
+    where: { id: params.id, workspaceId: membership.workspaceId },
+    select: { id: true, name: true, widgetConfig: true, allowedDomains: true }
+  });
+
+  if (!project) {
+    notFound();
+  }
+
+  const widgetConfig = project.widgetConfig as Record<string, unknown> | null;
+  const userName = membership.user.name ?? user.email?.split("@")[0] ?? "Owner";
+
   return (
-    <main className="mx-auto grid max-w-6xl gap-8 px-6 py-10 lg:grid-cols-[420px_1fr]">
-      <section>
-        <h1 className="text-3xl font-semibold">Widget customization</h1>
-        <p className="mt-2 text-slate-600">Phase 1 config fields are color, bot name, and welcome message.</p>
-        <form className="mt-8 space-y-4 rounded-lg border bg-white p-6">
-          <label className="block text-sm font-medium">
-            Brand color
-            <input className="mt-2 h-10 w-full rounded-md border px-3" defaultValue="#2563eb" />
-          </label>
-          <label className="block text-sm font-medium">
-            Bot name
-            <input className="mt-2 w-full rounded-md border px-3 py-2" defaultValue="Ava" />
-          </label>
-          <label className="block text-sm font-medium">
-            Welcome message
-            <textarea className="mt-2 min-h-24 w-full rounded-md border px-3 py-2" defaultValue="Hi! I can help you choose the right service." />
-          </label>
-          <button className="rounded-md bg-slate-950 px-4 py-2 text-sm text-white" type="button">Save config</button>
-        </form>
-      </section>
-      <section className="min-h-[620px] rounded-lg border bg-white p-4">
-        <iframe
-          className="h-full min-h-[590px] w-full rounded-md border"
-          src="/widget-preview.html"
-          title="Widget preview"
+    <DashboardLayout userName={userName} workspaceName={membership.workspace.name}>
+      <Link className="text-sm font-semibold text-[#7C3AED]" href={`/projects/${project.id}`}>
+        ← Back to project
+      </Link>
+      <div className="mt-5">
+        <h1 className="text-3xl font-bold tracking-tight text-[#111827]">Widget Settings</h1>
+        <p className="mt-2 text-[#6B7280]">Customize the chat widget appearance and security for {project.name}.</p>
+      </div>
+      <div className="mt-6">
+        <WidgetSettingsForm
+          projectId={project.id}
+          initialConfig={{
+            color: (widgetConfig?.color as string) ?? "#2563eb",
+            botName: (widgetConfig?.botName as string) ?? "LeadPilot",
+            welcomeMessage: (widgetConfig?.welcomeMessage as string) ?? "Hi! How can I help you today?",
+            avatarUrl: (widgetConfig?.avatarUrl as string) ?? ""
+          }}
+          initialDomains={project.allowedDomains}
         />
-      </section>
-    </main>
+      </div>
+    </DashboardLayout>
   );
 }

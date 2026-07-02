@@ -32,7 +32,7 @@ export default async function ProjectsPage() {
   const projects = await prisma.project.findMany({
     where: { workspaceId: membership.workspaceId },
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, siteUrl: true, clientId: true, createdAt: true }
+    select: { id: true, name: true, siteUrl: true, widgetKey: true, createdAt: true }
   });
 
   const userName = membership.user.name ?? user.email?.split("@")[0] ?? "Owner";

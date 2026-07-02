@@ -36,17 +36,19 @@ model WorkspaceMember {
 }
 
 model Project {
-  id            String         @id @default(cuid())
-  workspaceId   String
-  name          String
-  siteUrl       String
-  clientId      String         @unique @default(cuid())
-  widgetConfig  Json           @default("{}")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  conversations Conversation[]
-  leads         Lead[]
+  id             String         @id @default(cuid())
+  workspaceId    String
+  name           String
+  siteUrl        String
+  clientId       String         @unique @default(cuid())
+  widgetKey      String         @unique
+  allowedDomains String[]
+  widgetConfig   Json           @default("{}")
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversations  Conversation[]
+  leads          Lead[]
 }
 
 model Conversation {

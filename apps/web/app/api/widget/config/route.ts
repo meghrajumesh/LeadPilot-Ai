@@ -1,37 +1,40 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { corsHeaders, fail, ok } from "@/lib/api-response";
-import { findProjectByClientId, toWidgetConfig } from "@/lib/widget-store";
+import { findProjectByWidgetKey, toWidgetConfig } from "@/lib/widget-store";
 import { logger } from "@/lib/logger";
 
 const querySchema = z.object({
-  clientId: z.string().min(1)
+  widgetKey: z.string().min(1)
 });
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders() });
+export async function OPTIONS(request: Request) {
+  const origin = request.headers.get("origin");
+  return new NextResponse(null, { status: 204, headers: corsHeaders(origin) });
 }
 
 export async function GET(request: Request) {
+  const origin = request.headers.get("origin");
+
   try {
     const url = new URL(request.url);
     const parsed = querySchema.safeParse({
-      clientId: url.searchParams.get("clientId")
+      widgetKey: url.searchParams.get("widgetKey")
     });
 
     if (!parsed.success) {
-      return fail("Missing clientId");
+      return fail("Missing widgetKey", 400, origin);
     }
 
-    const project = await findProjectByClientId(parsed.data.clientId);
+    const project = await findProjectByWidgetKey(parsed.data.widgetKey);
 
     if (!project) {
-      return fail("Project not found", 404);
+      return fail("Widget not found", 404, origin);
     }
 
-    return ok({ config: toWidgetConfig(project) });
+    return ok({ config: toWidgetConfig(project) }, origin);
   } catch (error) {
     logger.error(error);
-    return fail("Unable to load widget config", 500);
+    return fail("Unable to load widget config", 500, origin);
   }
 }

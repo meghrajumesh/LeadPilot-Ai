@@ -5,6 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getSharedPrismaClient } from "@/lib/prisma";
 import { ingestDocument } from "@/lib/rag-supabase";
 import { logger } from "@/lib/logger";
+import {
+  Tier1RetryableError,
+  detectBlockedPage,
+  extractTitleAndContent,
+  fetchRenderedHtml,
+} from "@/lib/fetch-rendered-html";
 
 const bodySchema = z.object({
   projectId: z.string().min(1, "projectId is required"),
@@ -47,34 +53,43 @@ async function fetchUrlText(url: string): Promise<{ title: string; content: stri
         headers: { ...BROWSER_HEADERS, "User-Agent": ua },
         redirect: "follow",
       });
-      if (res.ok) {
-        const html = await res.text();
-        const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
-        const title = titleMatch ? titleMatch[1].trim() : new URL(url).hostname;
-        const body = html
-          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-          .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "")
-          .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, "")
-          .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, "")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/&[a-z]+;/gi, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-        return { title, content: body.slice(0, 50000) };
-      }
-      // 403 with Cloudflare/security — try next UA
-      if (res.status === 403) {
-        lastErr = new Error(`Website blocked the request (403). Try adding the content manually via Text or File upload instead.`);
+
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 410) {
+          throw new Error(`URL returned ${res.status} — page not found.`);
+        }
+        lastErr = new Tier1RetryableError(`Website returned ${res.status}`);
         continue;
       }
-      throw new Error(`Failed to fetch URL (${res.status})`);
+
+      const html = await res.text();
+
+      if (detectBlockedPage(html)) {
+        lastErr = new Tier1RetryableError("Anti-bot challenge detected");
+        continue;
+      }
+
+      const extracted = extractTitleAndContent(html, url);
+
+      if (extracted.content.length < 200) {
+        lastErr = new Tier1RetryableError("Content too short (likely JS-rendered)");
+        continue;
+      }
+
+      return extracted;
     } catch (e: any) {
-      lastErr = e instanceof Error ? e : new Error(String(e));
-      if (e?.name === "AbortError") continue;
-      throw new Error(`Failed to reach URL: ${e?.message ?? "Unknown error"}`);
+      if (e instanceof Tier1RetryableError) {
+        lastErr = e;
+        continue;
+      }
+      if (e?.name === "AbortError") {
+        lastErr = new Tier1RetryableError("Request timed out");
+        continue;
+      }
+      throw e;
     }
   }
+
   throw lastErr ?? new Error("Failed to fetch URL");
 }
 
@@ -103,8 +118,27 @@ export async function POST(request: Request) {
         title = title || fetched.title;
         content = fetched.content;
         sourceRef = sourceRef || url;
+        console.log(`[ingest] Tier 1 handled URL: ${url}`);
       } catch (e) {
-        return fail(e instanceof Error ? e.message : "Failed to fetch URL", 400);
+        if (e instanceof Tier1RetryableError) {
+          console.log(`[ingest] Tier 1 failed (${e.message}), trying Tier 2 for: ${url}`);
+          try {
+            const renderedHtml = await fetchRenderedHtml(url);
+            const extracted = extractTitleAndContent(renderedHtml, url);
+            title = title || extracted.title;
+            content = extracted.content;
+            sourceRef = sourceRef || url;
+            console.log(`[ingest] Tier 2 handled URL: ${url}`);
+          } catch (tier2Error) {
+            const msg = tier2Error instanceof Error ? tier2Error.message : "Unknown error";
+            return fail(
+              `Couldn't access this site — ${url}. ${msg} It may be heavily protected, or the scraper's monthly free credits are used up. Try another SCRAPER_PROVIDER.`,
+              400
+            );
+          }
+        } else {
+          return fail(e instanceof Error ? e.message : "Failed to fetch URL", 400);
+        }
       }
     }
 

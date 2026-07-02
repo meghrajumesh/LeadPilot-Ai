@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 import { corsHeaders } from "@/lib/api-response";
 import { logger } from "@/lib/logger";
+import { getSharedPrismaClient } from "@/lib/prisma";
 import { retrieve } from "@/lib/rag-supabase";
 import { findProjectByWidgetKey, isDomainAllowed } from "@/lib/widget-store";
 
@@ -18,6 +19,8 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       messages: { role: "user" | "model"; content: string }[];
       widgetKey?: string;
+      visitorId?: string;
+      conversationId?: string;
     };
 
     if (!body.messages || !Array.isArray(body.messages) || body.messages.length === 0) {
@@ -55,6 +58,25 @@ export async function POST(request: Request) {
     }
 
     const projectId = project.id;
+
+    const prisma = getSharedPrismaClient();
+    let conversationId = body.conversationId;
+    if (conversationId) {
+      try {
+        const existing = await prisma.conversation.findUnique({ where: { id: conversationId } });
+        if (!existing) conversationId = undefined;
+      } catch { conversationId = undefined; }
+    }
+    if (!conversationId) {
+      try {
+        const conv = await prisma.conversation.create({
+          data: { projectId, visitorId: body.visitorId || "anonymous" }
+        });
+        conversationId = conv.id;
+      } catch (e) {
+        logger.error(`[chat] conversation create error: ${e}`);
+      }
+    }
 
     const lastUserMsg = [...body.messages]
       .reverse()
@@ -110,8 +132,21 @@ export async function POST(request: Request) {
       .replace(/`{1,3}[^`]+`{1,3}/g, "")
       .replace(/\[(.+?)\]\(.+?\)/g, "$1");
 
+    if (conversationId && lastUserMsg) {
+      try {
+        await prisma.message.createMany({
+          data: [
+            { conversationId, role: "USER", content: lastUserMsg.content },
+            { conversationId, role: "ASSISTANT", content: reply },
+          ],
+        });
+      } catch (e) {
+        logger.error(`[chat] message persist error: ${e}`);
+      }
+    }
+
     return NextResponse.json(
-      { reply },
+      { conversationId, reply },
       { headers: corsHeaders(origin) }
     );
   } catch (error: any) {

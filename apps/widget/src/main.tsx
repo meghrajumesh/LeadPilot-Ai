@@ -118,6 +118,7 @@ function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const visitorId = useMemo(createVisitorId, []);
+  const conversationIdRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -168,6 +169,8 @@ function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           widgetKey: widgetKey,
+          visitorId: visitorId,
+          conversationId: conversationIdRef.current,
           messages: history.map((m) => ({
             role: m.role === "assistant" ? "model" : "user",
             content: m.content,
@@ -182,6 +185,7 @@ function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
       }
 
       const data = await res.json();
+      if (data.conversationId) conversationIdRef.current = data.conversationId;
       setMessages((current) => [
         ...current,
         { id: crypto.randomUUID(), role: "assistant", content: data.reply },

@@ -1,11 +1,11 @@
 import { Calendar } from "lucide-react";
 import { redirect } from "next/navigation";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { LeadsChart } from "@/components/dashboard/leads-chart";
 import { LiveConversations } from "@/components/dashboard/live-conversations";
+import { LiveStats } from "@/components/dashboard/live-stats";
 import { RecentLeads } from "@/components/dashboard/recent-leads";
 import { SourcesChart } from "@/components/dashboard/sources-chart";
-import { StatCard } from "@/components/dashboard/stat-card";
-import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { getDashboardStats, getLeadsOverTime, getLiveConversations, getRecentLeads, getTopSources, getUserData } from "@/lib/dashboard-data";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,13 +35,19 @@ export default async function DashboardPage() {
     }
   } catch {}
 
-  const [stats, leads, sources, recent, live] = await Promise.all([
-    getDashboardStats(),
+  const [leads, sources, recent, live] = await Promise.all([
     getLeadsOverTime(),
     getTopSources(),
     getRecentLeads(),
     getLiveConversations(),
   ]);
+
+  const serverStats = await getDashboardStats().then((s) => ({
+    conversations: s.find((x) => x.label === "Conversations")?.value as number ?? 0,
+    leads: s.find((x) => x.label === "Total Leads")?.value as number ?? 0,
+    meetingsBooked: s.find((x) => x.label === "Meetings Booked")?.value as number ?? 0,
+    conversionRate: ((s.find((x) => x.label === "Conversion Rate")?.value ?? "0%") as string).replace("%", ""),
+  }));
 
   return (
     <DashboardLayout userName={userName} workspaceName={workspaceName}>
@@ -58,11 +64,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-          {stats.map((stat) => (
-            <StatCard change={stat.change} key={stat.label} label={stat.label} period={stat.period} value={stat.value} />
-          ))}
-        </section>
+        <LiveStats serverStats={serverStats} />
 
         <section className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
           <LeadsChart data={leads} />

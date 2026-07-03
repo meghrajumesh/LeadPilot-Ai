@@ -41,7 +41,8 @@ Error generating stack: `+o.message+`
     :host { all: initial; }
     .lp-widget, .lp-widget * { box-sizing: border-box; font-family: ${`${e.fontFamily}, ${Dd}`}; }
     .lp-widget { position: fixed; z-index: 2147483647; ${l} color: #0f172a; }
-    .lp-messages { flex: 1; min-height: 0; overflow-y: auto; }
+    .lp-messages { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+    .lp-messages::-webkit-scrollbar { display: none; }
     .lp-footer { text-align: center; color: #64748b; font-size: 11px; }
     @keyframes lp-pop { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
     @keyframes lp-blink { 0%, 80%, 100% { opacity: 0.35; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }

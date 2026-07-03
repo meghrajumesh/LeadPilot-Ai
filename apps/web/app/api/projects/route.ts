@@ -47,7 +47,7 @@ export async function GET() {
   const projects = await prisma.project.findMany({
     where: { workspaceId: membership.workspaceId },
     orderBy: { createdAt: "desc" },
-    select: { id: true, name: true }
+    select: { id: true, name: true, siteUrl: true }
   });
 
   return NextResponse.json({ success: true, data: { projects } });

@@ -9,7 +9,19 @@ const updateProjectSchema = z.object({
       color: z.string().optional(),
       botName: z.string().optional(),
       welcomeMessage: z.string().optional(),
-      avatarUrl: z.string().optional()
+      avatarUrl: z.string().optional(),
+      textColor: z.string().optional(),
+      backgroundColor: z.string().optional(),
+      position: z.string().optional(),
+      launcherShape: z.string().optional(),
+      launcherIcon: z.string().optional(),
+      headerTitle: z.string().optional(),
+      cornerRadius: z.number().optional(),
+      sizePreset: z.string().optional(),
+      showBranding: z.boolean().optional(),
+      fontFamily: z.string().optional(),
+      layout: z.string().optional(),
+      voiceEnabled: z.boolean().optional()
     })
     .optional(),
   allowedDomains: z.array(z.string()).optional()

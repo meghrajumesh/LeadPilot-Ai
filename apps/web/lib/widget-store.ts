@@ -15,7 +15,32 @@ type WidgetConfigJson = {
   botName?: string;
   welcomeMessage?: string;
   avatarUrl?: string;
+  textColor?: string;
+  backgroundColor?: string;
+  position?: string;
+  launcherShape?: string;
+  launcherIcon?: string;
+  headerTitle?: string;
+  cornerRadius?: number;
+  sizePreset?: string;
+  showBranding?: boolean;
+  fontFamily?: string;
+  layout?: string;
+  voiceEnabled?: boolean;
 };
+
+const DEFAULT_WIDGET_COLOR = "#2563eb";
+const DEFAULT_TEXT_COLOR = "#ffffff";
+const DEFAULT_BG_COLOR = "#ffffff";
+const DEFAULT_POSITION = "bottom-right";
+const DEFAULT_LAUNCHER_SHAPE = "round";
+const DEFAULT_HEADER_TITLE = "Chat with us";
+const DEFAULT_CORNER_RADIUS = 18;
+const DEFAULT_SIZE_PRESET = "M";
+const DEFAULT_SHOW_BRANDING = true;
+const DEFAULT_FONT_FAMILY = "Inter";
+const DEFAULT_LAYOUT = "bubble";
+const DEFAULT_VOICE_ENABLED = true;
 
 const demoProject: StoredProject = {
   id: "demo-project",
@@ -24,9 +49,20 @@ const demoProject: StoredProject = {
   widgetKey: "wgt_demo",
   allowedDomains: [],
   widgetConfig: {
-    color: "#2563eb",
+    color: DEFAULT_WIDGET_COLOR,
     botName: "Ava",
-    welcomeMessage: "Hi! I can help you choose the right service."
+    welcomeMessage: "Hi! I can help you choose the right service.",
+    textColor: DEFAULT_TEXT_COLOR,
+    backgroundColor: DEFAULT_BG_COLOR,
+    position: DEFAULT_POSITION,
+    launcherShape: DEFAULT_LAUNCHER_SHAPE,
+    headerTitle: DEFAULT_HEADER_TITLE,
+    cornerRadius: DEFAULT_CORNER_RADIUS,
+    sizePreset: DEFAULT_SIZE_PRESET,
+    showBranding: DEFAULT_SHOW_BRANDING,
+    fontFamily: DEFAULT_FONT_FAMILY,
+    layout: DEFAULT_LAYOUT,
+    voiceEnabled: DEFAULT_VOICE_ENABLED
   }
 };
 
@@ -49,10 +85,22 @@ export function toWidgetConfig(project: StoredProject): WidgetConfig {
   return {
     widgetKey: project.widgetKey,
     projectName: project.name,
-    color: config.color ?? "#2563eb",
+    color: config.color ?? DEFAULT_WIDGET_COLOR,
     botName: config.botName ?? "LeadPilot",
     welcomeMessage: config.welcomeMessage ?? "Hi! How can I help you today?",
-    avatarUrl: config.avatarUrl
+    avatarUrl: config.avatarUrl,
+    textColor: config.textColor ?? DEFAULT_TEXT_COLOR,
+    backgroundColor: config.backgroundColor ?? DEFAULT_BG_COLOR,
+    position: (config.position as WidgetConfig["position"]) ?? DEFAULT_POSITION,
+    launcherShape: (config.launcherShape as WidgetConfig["launcherShape"]) ?? DEFAULT_LAUNCHER_SHAPE,
+    launcherIcon: config.launcherIcon ?? "",
+    headerTitle: config.headerTitle ?? DEFAULT_HEADER_TITLE,
+    cornerRadius: config.cornerRadius ?? DEFAULT_CORNER_RADIUS,
+    sizePreset: (config.sizePreset as WidgetConfig["sizePreset"]) ?? DEFAULT_SIZE_PRESET,
+    showBranding: config.showBranding ?? DEFAULT_SHOW_BRANDING,
+    fontFamily: config.fontFamily ?? DEFAULT_FONT_FAMILY,
+    layout: (config.layout as WidgetConfig["layout"]) ?? DEFAULT_LAYOUT,
+    voiceEnabled: config.voiceEnabled ?? DEFAULT_VOICE_ENABLED
   };
 }
 

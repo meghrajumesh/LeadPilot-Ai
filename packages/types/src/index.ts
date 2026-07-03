@@ -17,6 +17,18 @@ export type WidgetConfig = {
   botName: string;
   welcomeMessage: string;
   avatarUrl?: string;
+  textColor: string;
+  backgroundColor: string;
+  position: "bottom-right" | "bottom-left" | "top-right" | "top-left";
+  launcherShape: "round" | "square";
+  launcherIcon: string;
+  headerTitle: string;
+  cornerRadius: number;
+  sizePreset: "S" | "M" | "L";
+  showBranding: boolean;
+  fontFamily: string;
+  layout: "bubble" | "bar" | "voice" | "terminal" | "command";
+  voiceEnabled: boolean;
 };
 
 export type WidgetConfigResponse = {

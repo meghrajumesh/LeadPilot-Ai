@@ -36,8 +36,27 @@ export default async function WidgetCustomizationPage({ params }: { params: { id
     notFound();
   }
 
-  const widgetConfig = project.widgetConfig as Record<string, unknown> | null;
+  const wc = project.widgetConfig as Record<string, unknown> | null;
   const userName = membership.user.name ?? user.email?.split("@")[0] ?? "Owner";
+
+  const initialSettings = {
+    color: (wc?.color as string) ?? "#2563eb",
+    botName: (wc?.botName as string) ?? "LeadPilot",
+    welcomeMessage: (wc?.welcomeMessage as string) ?? "Hi! How can I help you today?",
+    avatarUrl: (wc?.avatarUrl as string) ?? "",
+    textColor: (wc?.textColor as string) ?? "#ffffff",
+    backgroundColor: (wc?.backgroundColor as string) ?? "#ffffff",
+    position: (wc?.position as string) ?? "bottom-right",
+    launcherShape: (wc?.launcherShape as string) ?? "round",
+    launcherIcon: (wc?.launcherIcon as string) ?? "",
+    headerTitle: (wc?.headerTitle as string) ?? "Chat with us",
+    cornerRadius: (wc?.cornerRadius as number) ?? 18,
+    sizePreset: (wc?.sizePreset as string) ?? "M",
+    showBranding: (wc?.showBranding as boolean) ?? true,
+    fontFamily: (wc?.fontFamily as string) ?? "Inter",
+    layout: (wc?.layout as string) ?? "bubble",
+    voiceEnabled: (wc?.voiceEnabled as boolean) ?? true
+  };
 
   return (
     <DashboardLayout userName={userName} workspaceName={membership.workspace.name}>
@@ -51,12 +70,7 @@ export default async function WidgetCustomizationPage({ params }: { params: { id
       <div className="mt-6">
         <WidgetSettingsForm
           projectId={project.id}
-          initialConfig={{
-            color: (widgetConfig?.color as string) ?? "#2563eb",
-            botName: (widgetConfig?.botName as string) ?? "LeadPilot",
-            welcomeMessage: (widgetConfig?.welcomeMessage as string) ?? "Hi! How can I help you today?",
-            avatarUrl: (widgetConfig?.avatarUrl as string) ?? ""
-          }}
+          initialSettings={initialSettings}
           initialDomains={project.allowedDomains}
         />
       </div>

@@ -99,7 +99,7 @@ Error generating stack: `+o.message+`
       .lp-launcher-preview span { color: ${e.color}; }
       .lp-launcher-btn { width: 44px; height: 44px; border-radius: 0 999px 999px 999px; background: ${e.color}; color: ${e.textColor}; display: grid; place-items: center; font-size: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); border: 0; cursor: pointer; }
       .lp-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 2147483646; animation: lp-fade-in 200ms ease; }
-      .lp-panel { width: min(${o.w}px + 40px, 90vw); max-width: 480px; height: min(${o.h}px, 540px, 80vh); display: flex; flex-direction: column; overflow: hidden; background: #0d1117; border: 1px solid #30363d; border-radius: 10px; box-shadow: 0 24px 80px rgba(0,0,0,0.6); font-family: ${c}; animation: lp-scale-in 220ms cubic-bezier(0.16,1,0.3,1); }
+      .lp-panel { width: min(calc(${o.w} + 40px), 90vw); max-width: 480px; height: min(${o.h}, 540px, 80vh); display: flex; flex-direction: column; overflow: hidden; background: #0d1117; border: 1px solid #30363d; border-radius: 10px; box-shadow: 0 24px 80px rgba(0,0,0,0.6); font-family: ${c}; animation: lp-scale-in 220ms cubic-bezier(0.16,1,0.3,1); }
       .lp-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: #161b22; color: #c9d1d9; border-bottom: 1px solid #30363d; font-family: ${c}; }
       .lp-header-prompt { color: ${e.color}; font-size: 13px; font-weight: 700; }
       .lp-header-title { font-size: 13px; font-weight: 600; color: #c9d1d9; font-family: ${c}; }

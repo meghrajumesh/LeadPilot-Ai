@@ -18,6 +18,8 @@ type WidgetPreviewSettings = {
   fontFamily: string;
   layout: string;
   voiceEnabled: boolean;
+  callEnabled?: boolean;
+  quickActions?: { label: string; icon: string; action: string; value: string }[];
 };
 
 type MicState = "idle" | "recording" | "disabled";
@@ -389,6 +391,52 @@ export function WidgetPreview({
         </form>
       );
     },
+    commandbar: () => {
+      const chipIcon = (name: string) => {
+        const icons: Record<string, string> = { headset: "🎧", calendar: "📅", message: "💬", link: "🔗", star: "⭐", zap: "⚡" };
+        return icons[name] || "💬";
+      };
+      const quickActions = settings.quickActions ?? [];
+      const showCall = settings.callEnabled !== false;
+      const showVoice = settings.voiceEnabled;
+      return (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 0, width: "100%", maxWidth: 680 }}>
+          <button type="button" aria-label="Toggle chat"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 16, cursor: "pointer", color: "#94a3b8", border: 0, background: "transparent", padding: 0 }}>
+            <svg fill="none" height={10} viewBox="0 0 14 14" width={10} style={{ transform: "rotate(180deg)", transition: "transform 220ms" }}>
+              <path d="M11 9.5 7 5.5l-4 4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+            </svg>
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 16, padding: "8px 8px 8px 14px", boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+            <span style={{ color: settings.color, fontSize: 16, flexShrink: 0 }}>✦</span>
+            <input disabled placeholder="Ask us anything…" style={{ flex: 1, minWidth: 0, border: "none", outline: "none", fontSize: 13, background: "transparent", color: "#0f172a" }} />
+            {showVoice && (
+              <span style={{ width: 30, height: 30, display: "grid", placeItems: "center", color: "#94a3b8" }}>
+                <svg fill="none" height={14} viewBox="0 0 24 24" width={14}><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 1 0 6 0V5a3 3 0 0 0-3-3Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+              </span>
+            )}
+            <button type="button" aria-label="Send" disabled style={{ width: 34, height: 34, border: 0, borderRadius: 9999, background: settings.color, color: settings.textColor, display: "grid", placeItems: "center", flexShrink: 0, opacity: 0.45, cursor: "default" }}>
+              <svg fill="none" height={14} viewBox="0 0 24 24" width={14}><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+            </button>
+            {showCall && (
+              <button type="button" aria-label="Call" style={{ width: 34, height: 34, border: "1px solid #e2e8f0", borderRadius: 9999, background: "transparent", color: settings.color, display: "grid", placeItems: "center", flexShrink: 0, cursor: "pointer" }}>
+                <svg fill="none" height={14} viewBox="0 0 24 24" width={14}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+              </button>
+            )}
+          </div>
+          {quickActions.length > 0 && (
+            <div style={{ display: "flex", gap: 6, padding: "6px 0 4px", flexWrap: "wrap" }}>
+              {quickActions.map((qa, i) => (
+                <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "4px 10px", border: "1px solid #e2e8f0", borderRadius: 9999, background: "#ffffff", color: "#475569", fontSize: 11, whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 12 }}>{chipIcon(qa.icon)}</span>
+                  {qa.label}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    },
   };
 
   const headers: Record<string, () => React.ReactNode> = {
@@ -467,6 +515,12 @@ export function WidgetPreview({
         <button onClick={toggle} type="button" style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: 14, padding: 2, lineHeight: 1 }}>x</button>
       </header>
     ),
+    commandbar: () => (
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: "#ffffff", borderBottom: "1px solid #f1f5f9" }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{settings.headerTitle}</span>
+        <button onClick={toggle} type="button" style={{ border: 0, background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: 14, padding: 2, lineHeight: 1 }}>x</button>
+      </header>
+    ),
   };
 
   const composers: Record<string, () => React.ReactNode> = {
@@ -521,6 +575,7 @@ export function WidgetPreview({
         <button disabled style={{ border: 0, borderRadius: 8, background: settings.color, color: settings.textColor, padding: "0 12px", height: 30, fontWeight: 600, cursor: "default", opacity: 0.55, fontSize: 12, fontFamily: monoFont }}>Send</button>
       </div>
     ),
+    commandbar: () => null,
   };
 
   const panels: Record<string, () => React.ReactNode> = {
@@ -572,6 +627,13 @@ export function WidgetPreview({
         {footer}
       </div>
     ),
+    commandbar: () => (
+      <div style={{ width: "100%", display: "flex", flexDirection: "column", overflow: "hidden", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "14px 14px 0 0", boxShadow: "0 -8px 32px rgba(0,0,0,0.08)", maxHeight: Math.min(size.h, 480) }}>
+        {headers.commandbar()}
+        {messageList()}
+        {footer}
+      </div>
+    ),
   };
 
   if (showBoth) {
@@ -606,6 +668,22 @@ export function WidgetPreview({
             <div style={{ transform: open ? "none" : "scale(0.5) translateY(16px)", transition: transitionBase, transformOrigin: "center" }}>
               {panels.terminal()}
             </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (template === "commandbar") {
+    return (
+      <>
+        <style>{keyframesStyle}</style>
+        <div style={{ position: "relative", width: "100%", height: "100%", fontFamily: settings.fontFamily, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end" }}>
+          <div style={{ width: "100%", maxWidth: 680, opacity: open ? 1 : 0, transform: open ? "translateY(0)" : "translateY(16px)", transition: transitionBase, pointerEvents: open ? "auto" : "none" }}>
+            {panels.commandbar()}
+          </div>
+          <div style={{ width: "100%", maxWidth: 680, opacity: 1, transform: "none", transition: transitionBase }}>
+            {launchers.commandbar()}
           </div>
         </div>
       </>

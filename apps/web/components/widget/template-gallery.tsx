@@ -21,6 +21,8 @@ type WidgetSettingsData = {
   fontFamily: string;
   layout: string;
   voiceEnabled: boolean;
+  callEnabled?: boolean;
+  quickActions?: { label: string; icon: string; action: string; value: string }[];
 };
 
 type Template = {
@@ -144,6 +146,34 @@ const TEMPLATES: Template[] = [
       fontFamily: '"ui-monospace", "Menlo", "Consolas", monospace',
       layout: "command",
       voiceEnabled: true,
+    },
+  },
+  {
+    id: "commandbar",
+    name: "Command Bar",
+    description: "Persistently docked AI command bar with quick-action chips, expandable conversation panel, call and voice buttons. Always visible.",
+    settings: {
+      color: "#7C3AED",
+      textColor: "#ffffff",
+      backgroundColor: "#ffffff",
+      avatarUrl: "",
+      position: "bottom-right",
+      launcherShape: "round",
+      launcherIcon: "",
+      headerTitle: "Sales Assistant",
+      welcomeMessage: "Hi! I can help you find what you need.",
+      botName: "Ava",
+      cornerRadius: 16,
+      sizePreset: "M",
+      showBranding: true,
+      fontFamily: "Inter",
+      layout: "commandbar",
+      voiceEnabled: true,
+      callEnabled: true,
+      quickActions: [
+        { label: "Speak to Sales", icon: "headset", action: "sendMessage", value: "I'd like to speak to sales" },
+        { label: "Book a Demo", icon: "calendar", action: "link", value: "https://example.com/demo" },
+      ],
     },
   },
 ];

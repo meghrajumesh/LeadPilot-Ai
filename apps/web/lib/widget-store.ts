@@ -27,6 +27,8 @@ type WidgetConfigJson = {
   fontFamily?: string;
   layout?: string;
   voiceEnabled?: boolean;
+  callEnabled?: boolean;
+  quickActions?: { label: string; icon: string; action: string; value: string }[];
 };
 
 const DEFAULT_WIDGET_COLOR = "#2563eb";
@@ -41,6 +43,11 @@ const DEFAULT_SHOW_BRANDING = true;
 const DEFAULT_FONT_FAMILY = "Inter";
 const DEFAULT_LAYOUT = "bubble";
 const DEFAULT_VOICE_ENABLED = true;
+const DEFAULT_CALL_ENABLED = true;
+const DEFAULT_QUICK_ACTIONS = [
+  { label: "Speak to Sales", icon: "headset", action: "sendMessage", value: "I'd like to speak to sales" },
+  { label: "Book a Demo", icon: "calendar", action: "link", value: "https://example.com/demo" },
+];
 
 const demoProject: StoredProject = {
   id: "demo-project",
@@ -62,7 +69,9 @@ const demoProject: StoredProject = {
     showBranding: DEFAULT_SHOW_BRANDING,
     fontFamily: DEFAULT_FONT_FAMILY,
     layout: DEFAULT_LAYOUT,
-    voiceEnabled: DEFAULT_VOICE_ENABLED
+    voiceEnabled: DEFAULT_VOICE_ENABLED,
+    callEnabled: DEFAULT_CALL_ENABLED,
+    quickActions: DEFAULT_QUICK_ACTIONS
   }
 };
 
@@ -100,7 +109,9 @@ export function toWidgetConfig(project: StoredProject): WidgetConfig {
     showBranding: config.showBranding ?? DEFAULT_SHOW_BRANDING,
     fontFamily: config.fontFamily ?? DEFAULT_FONT_FAMILY,
     layout: (config.layout as WidgetConfig["layout"]) ?? DEFAULT_LAYOUT,
-    voiceEnabled: config.voiceEnabled ?? DEFAULT_VOICE_ENABLED
+    voiceEnabled: config.voiceEnabled ?? DEFAULT_VOICE_ENABLED,
+    callEnabled: config.callEnabled ?? DEFAULT_CALL_ENABLED,
+    quickActions: (config.quickActions ?? DEFAULT_QUICK_ACTIONS) as WidgetConfig["quickActions"],
   };
 }
 

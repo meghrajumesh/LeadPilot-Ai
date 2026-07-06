@@ -215,6 +215,44 @@ function styles(config: {
     `;
   }
 
+  if (template === "commandbar") {
+    return baseStyle + `
+      @keyframes lp-slide-up-cb { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      .lp-widget { position: fixed; z-index: 2147483647; left: 50%; transform: translateX(-50%); bottom: 12px; width: calc(100vw - 24px); max-width: 680px; color: #0f172a; }
+      .lp-commandbar-container { display: flex; flex-direction: column; align-items: stretch; gap: 0; width: 100%; }
+      .lp-commandbar-panel { width: 100%; display: flex; flex-direction: column; overflow: hidden; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px 14px 0 0; box-shadow: 0 -8px 32px rgba(0,0,0,0.08); margin-bottom: 4px; max-height: min(${size.h}, 480px, 60vh); animation: lp-slide-up-cb 280ms ease; }
+      .lp-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #ffffff; border-bottom: 1px solid #f1f5f9; }
+      .lp-header-title { font-size: 13px; font-weight: 600; color: #0f172a; }
+      .lp-close { border: 0; background: transparent; color: #94a3b8; cursor: pointer; font-size: 14px; padding: 2px; line-height: 1; }
+      .lp-messages { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 10px 14px; background: #ffffff; }
+      .lp-messages::-webkit-scrollbar { display: none; }
+      .lp-bubble { max-width: 82%; margin: 0 0 6px; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+      .lp-user { margin-left: auto; background: ${config.color}; color: ${config.textColor}; }
+      .lp-assistant { margin-right: auto; background: #f1f5f9; color: #0f172a; }
+      .lp-form { display: none; }
+      .lp-footer { padding: 0 14px 10px; text-align: center; color: #94a3b8; font-size: 10px; background: #ffffff; }
+      .lp-launcher-chevron { display: flex; align-items: center; justify-content: center; width: 100%; height: 16px; cursor: pointer; color: #94a3b8; transition: color 150ms; background: transparent; border: 0; padding: 0; margin: 0; }
+      .lp-launcher-chevron:hover { color: ${config.color}; }
+      .lp-launcher-bar { display: flex; align-items: center; gap: 8px; width: 100%; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 8px 8px 8px 14px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+      .lp-launcher-sparkle { color: ${config.color}; font-size: 16px; flex-shrink: 0; }
+      .lp-launcher-input { flex: 1; min-width: 0; border: none; outline: none; font-size: 13px; background: transparent; color: #0f172a; }
+      .lp-launcher-input::placeholder { color: #94a3b8; }
+      .lp-launcher-send { width: 34px; height: 34px; border: 0; border-radius: 9999px; background: ${config.color}; color: ${config.textColor}; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: background 150ms; }
+      .lp-launcher-send:disabled { opacity: 0.45; cursor: default; }
+      .lp-launcher-call { width: 34px; height: 34px; border: 0; border-radius: 9999px; background: transparent; color: ${config.color}; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; border: 1px solid #e2e8f0; transition: background 150ms; }
+      .lp-launcher-call:hover { background: #f1f5f9; }
+      .lp-launcher-chips { display: flex; gap: 6px; padding: 6px 0 4px; flex-wrap: wrap; }
+      .lp-launcher-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 9999px; background: #ffffff; color: #475569; font-size: 11px; cursor: pointer; transition: background 150ms, border-color 150ms; white-space: nowrap; }
+      .lp-launcher-chip:hover { background: #f8fafc; border-color: ${config.color}; color: ${config.color}; }
+      .lp-launcher-chip-icon { font-size: 12px; }
+      .lp-typing { display: inline-flex; gap: 4px; padding: 12px; }
+      .lp-typing span { width: 6px; height: 6px; border-radius: 999px; background: #94a3b8; animation: lp-blink 900ms infinite ease-in-out; }
+      .lp-typing span:nth-child(2) { animation-delay: 120ms; }
+      .lp-typing span:nth-child(3) { animation-delay: 240ms; }
+      @media (max-width: 520px) { .lp-widget { left: 12px; width: calc(100vw - 24px); } }
+    `;
+  }
+
   return baseStyle + `
     .lp-launcher { width: 58px; height: 58px; border: 0; border-radius: ${launcherRadius}px; background: ${config.color}; color: ${config.textColor}; cursor: pointer; box-shadow: 0 18px 42px rgba(15,23,42,0.24); display: grid; place-items: center; transition: transform 160ms ease, box-shadow 160ms ease; animation: lp-idle-bob 3s ease-in-out infinite; }
     .lp-launcher:hover { transform: translateY(-2px); box-shadow: 0 22px 50px rgba(15,23,42,0.28); }
@@ -374,6 +412,8 @@ function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
   const activeColor = config?.color ?? "#2563eb";
   const template = config?.layout ?? "bubble";
   const showVoice = config?.voiceEnabled ?? false;
+  const showCall = config?.callEnabled ?? true;
+  const quickActions = config?.quickActions ?? [];
   const styleConfig = {
     color: activeColor,
     textColor: config?.textColor ?? "#ffffff",
@@ -458,6 +498,33 @@ function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
     }
   }
 
+  function onCallAction() {
+    // TODO: integrate click-to-call / voice call here (later stage)
+    console.log('call action triggered');
+  }
+
+  function handleCommandbarSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (status === "collapsed") setStatus("open");
+    sendMessage(e);
+  }
+
+  function handleQuickAction(qa: NonNullable<typeof config>["quickActions"][number]) {
+    if (qa.action === "link") {
+      window.open(qa.value, "_blank", "noopener");
+      return;
+    }
+    if (status === "collapsed") setStatus("open");
+    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: "user", content: qa.value };
+    setMessages((prev) => [...prev, userMsg]);
+    setStatus("loading");
+    sendMessageToApi(qa.value);
+  }
+
+  function chipIcon(name: string) {
+    const icons: Record<string, string> = { headset: "🎧", calendar: "📅", message: "💬", link: "🔗", star: "⭐", zap: "⚡" };
+    return icons[name] || "💬";
+  }
+
   const renderCommandLauncher = () => (
     <form className="lp-launcher" onSubmit={handleCommandSubmit}>
       <span className="lp-launcher-prompt">&gt;</span>
@@ -480,6 +547,54 @@ function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
         <svg fill="none" height={16} viewBox="0 0 24 24" width={16}><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
       </button>
     </form>
+  );
+
+  const renderCommandbarLauncher = () => (
+    <div className="lp-commandbar-container">
+      <button
+        className="lp-launcher-chevron"
+        onClick={() => setStatus(status === "collapsed" ? "open" : "collapsed")}
+        type="button"
+        aria-label={status === "collapsed" ? "Expand chat" : "Collapse chat"}
+      >
+        <svg fill="none" height={10} viewBox="0 0 14 14" width={10} style={{ transform: status === "collapsed" ? "rotate(180deg)" : "none", transition: "transform 220ms" }}>
+          <path d="M11 9.5 7 5.5l-4 4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+        </svg>
+      </button>
+      <form className="lp-launcher-bar" onSubmit={handleCommandbarSubmit}>
+        <span className="lp-launcher-sparkle">✦</span>
+        <input
+          className="lp-launcher-input"
+          disabled={status === "loading"}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder={config?.headerTitle ? `Ask ${config.headerTitle} anything\u2026` : "Ask us anything\u2026"}
+          value={draft}
+        />
+        {showVoice && (
+          <button type="button" aria-label="Voice input" className="lp-launcher-send" style={{ background: "transparent", color: "#94a3b8", fontSize: 14, width: 30, height: 30 }} onClick={() => console.log("voice input triggered")}>
+            <svg fill="none" height={14} viewBox="0 0 24 24" width={14}><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 1 0 6 0V5a3 3 0 0 0-3-3Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+          </button>
+        )}
+        <button type="submit" aria-label="Send" className="lp-launcher-send" disabled={!draft.trim()}>
+          <svg fill="none" height={14} viewBox="0 0 24 24" width={14}><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+        </button>
+        {showCall && (
+          <button type="button" aria-label="Call" className="lp-launcher-call" onClick={onCallAction}>
+            <svg fill="none" height={14} viewBox="0 0 24 24" width={14}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" /></svg>
+          </button>
+        )}
+      </form>
+      {quickActions.length > 0 && (
+        <div className="lp-launcher-chips">
+          {quickActions.map((qa, i) => (
+            <button key={i} type="button" className="lp-launcher-chip" onClick={() => handleQuickAction(qa)}>
+              <span className="lp-launcher-chip-icon">{chipIcon(qa.icon)}</span>
+              {qa.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 
   const renderHeader = () => {
@@ -505,6 +620,14 @@ function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
         <header className="lp-header">
           <span className="lp-header-prompt">&gt;</span>
           <span className="lp-header-title">{config?.headerTitle ?? "Command"}</span>
+          <button aria-label="Close chat" className="lp-close" onClick={() => setStatus("collapsed")} type="button">x</button>
+        </header>
+      );
+    }
+    if (template === "commandbar") {
+      return (
+        <header className="lp-header">
+          <span className="lp-header-title">{config?.headerTitle || config?.botName || "Chat"}</span>
           <button aria-label="Close chat" className="lp-close" onClick={() => setStatus("collapsed")} type="button">x</button>
         </header>
       );
@@ -602,7 +725,32 @@ function Widget({ widgetKey, apiUrl }: { widgetKey: string; apiUrl: string }) {
     <>
       <style>{styles(styleConfig)}</style>
       <div className="lp-widget">
-        {status === "collapsed" ? (
+        {template === "commandbar" ? (
+          <>
+            {status !== "collapsed" && (
+              <section aria-label="LeadPilot chat" className="lp-commandbar-panel">
+                {renderHeader()}
+                <div className="lp-messages" ref={scrollRef}>
+                  {messages.map((message) => (
+                    <p className={`lp-bubble lp-${message.role}`} key={message.id}>{message.content}</p>
+                  ))}
+                  {status === "loading" ? (
+                    <div className="lp-bubble lp-assistant lp-typing" aria-label="Typing">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  ) : null}
+                  {status === "error" ? <p className="lp-bubble lp-assistant">{error ?? "Something went wrong."}</p> : null}
+                </div>
+                {config?.showBranding !== false && (
+                  <footer className="lp-footer">Powered by LeadPilot</footer>
+                )}
+              </section>
+            )}
+            {renderCommandbarLauncher()}
+          </>
+        ) : status === "collapsed" ? (
           template === "bar" ? renderBarLauncher() :
           template === "terminal" ? renderTerminalLauncher() :
           template === "command" ? renderCommandLauncher() : (

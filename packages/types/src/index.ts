@@ -10,6 +10,13 @@ export type ApiFailure = {
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
+export type QuickAction = {
+  label: string;
+  icon: "headset" | "calendar" | "message" | "link" | "star" | "zap";
+  action: "sendMessage" | "link";
+  value: string;
+};
+
 export type WidgetConfig = {
   widgetKey: string;
   projectName: string;
@@ -27,8 +34,10 @@ export type WidgetConfig = {
   sizePreset: "S" | "M" | "L";
   showBranding: boolean;
   fontFamily: string;
-  layout: "bubble" | "bar" | "voice" | "terminal" | "command";
+  layout: "bubble" | "bar" | "voice" | "terminal" | "command" | "commandbar";
   voiceEnabled: boolean;
+  callEnabled: boolean;
+  quickActions: QuickAction[];
 };
 
 export type WidgetConfigResponse = {

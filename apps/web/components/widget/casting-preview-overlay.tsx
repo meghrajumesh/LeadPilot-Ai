@@ -21,6 +21,8 @@ type WidgetSettingsData = {
   fontFamily: string;
   layout: string;
   voiceEnabled: boolean;
+  callEnabled?: boolean;
+  quickActions?: { label: string; icon: string; action: string; value: string }[];
 };
 
 type CastingPreviewOverlayProps = {

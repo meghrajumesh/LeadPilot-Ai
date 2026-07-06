@@ -26,6 +26,8 @@ type WidgetSettingsData = {
   fontFamily: string;
   layout: string;
   voiceEnabled: boolean;
+  callEnabled?: boolean;
+  quickActions?: { label: string; icon: string; action: string; value: string }[];
 };
 
 type WidgetSettingsFormProps = {
@@ -56,6 +58,7 @@ const LAYOUT_OPTIONS = [
   { value: "voice", label: "Voice", desc: "Mic launcher, large centered mic, speaker buttons." },
   { value: "terminal", label: "Terminal", desc: "Peeking preview bubble, dark center-modal console." },
   { value: "command", label: "Command", desc: "Type-into launcher bar, expand-to-panel chat." },
+  { value: "commandbar", label: "Command Bar", desc: "Persistent docked bar with chips, call button, expandable panel." },
 ];
 
 function cn(...classes: (string | false | undefined | null)[]) {
@@ -105,6 +108,11 @@ export function WidgetSettingsForm({ projectId, initialSettings, initialDomains 
       fontFamily: "Inter",
       layout: "bubble",
       voiceEnabled: true,
+      callEnabled: true,
+      quickActions: [
+        { label: "Speak to Sales", icon: "headset", action: "sendMessage", value: "I'd like to speak to sales" },
+        { label: "Book a Demo", icon: "calendar", action: "link", value: "https://example.com/demo" },
+      ],
     });
   }
 
@@ -135,6 +143,8 @@ export function WidgetSettingsForm({ projectId, initialSettings, initialDomains 
             fontFamily: settings.fontFamily,
             layout: settings.layout,
             voiceEnabled: settings.voiceEnabled,
+            callEnabled: settings.callEnabled ?? true,
+            quickActions: settings.quickActions ?? [],
           },
           allowedDomains: domains,
         }),
@@ -409,8 +419,131 @@ export function WidgetSettingsForm({ projectId, initialSettings, initialDomains 
                     />
                   </button>
                 </label>
+                <label className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-[#111827]">Call Button</p>
+                    <p className="text-[10px] text-[#6B7280]">Show call button in command bar (commandbar layout)</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={settings.callEnabled ?? true}
+                    onClick={() => update("callEnabled", !(settings.callEnabled ?? true))}
+                    className={cn(
+                      "relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                      (settings.callEnabled ?? true) ? "bg-[#7C3AED]" : "bg-[#D1D5DB]"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform",
+                        (settings.callEnabled ?? true) ? "translate-x-4" : "translate-x-0"
+                      )}
+                    />
+                  </button>
+                </label>
               </div>
             </section>
+
+            {settings.layout === "commandbar" && (
+              <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
+                <h2 className="text-base font-bold text-[#111827]">Quick Actions</h2>
+                <p className="mt-1 text-[10px] text-[#6B7280]">Chips shown below the command bar. Only relevant for the Command Bar layout.</p>
+                <div className="mt-3 space-y-3">
+                  {(settings.quickActions ?? []).map((qa, i) => (
+                    <div key={i} className="space-y-2 rounded-lg border border-[#E5E7EB] p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-semibold text-[#6B7280]">Chip {i + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const list = [...(settings.quickActions ?? [])];
+                            list.splice(i, 1);
+                            update("quickActions", list);
+                          }}
+                          className="text-[10px] text-red-500 hover:text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px]">Label</Label>
+                          <input
+                            className="mt-0.5 flex h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[11px] outline-none"
+                            value={qa.label}
+                            onChange={(e) => {
+                              const list = [...(settings.quickActions ?? [])];
+                              list[i] = { ...list[i], label: e.target.value };
+                              update("quickActions", list);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">Icon</Label>
+                          <select
+                            className="mt-0.5 flex h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[11px] outline-none"
+                            value={qa.icon}
+                            onChange={(e) => {
+                              const list = [...(settings.quickActions ?? [])];
+                              list[i] = { ...list[i], icon: e.target.value };
+                              update("quickActions", list);
+                            }}
+                          >
+                            <option value="headset">🎧 Headset</option>
+                            <option value="calendar">📅 Calendar</option>
+                            <option value="message">💬 Message</option>
+                            <option value="link">🔗 Link</option>
+                            <option value="star">⭐ Star</option>
+                            <option value="zap">⚡ Zap</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px]">Action</Label>
+                          <select
+                            className="mt-0.5 flex h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[11px] outline-none"
+                            value={qa.action}
+                            onChange={(e) => {
+                              const list = [...(settings.quickActions ?? [])];
+                              list[i] = { ...list[i], action: e.target.value };
+                              update("quickActions", list);
+                            }}
+                          >
+                            <option value="sendMessage">Send Message</option>
+                            <option value="link">Open Link</option>
+                          </select>
+                        </div>
+                        <div>
+                          <Label className="text-[10px]">{qa.action === "link" ? "URL" : "Message"}</Label>
+                          <input
+                            className="mt-0.5 flex h-7 w-full rounded-md border border-slate-300 bg-white px-2 text-[11px] outline-none"
+                            value={qa.value}
+                            onChange={(e) => {
+                              const list = [...(settings.quickActions ?? [])];
+                              list[i] = { ...list[i], value: e.target.value };
+                              update("quickActions", list);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const list = [...(settings.quickActions ?? [])];
+                      list.push({ label: "", icon: "message", action: "sendMessage", value: "" });
+                      update("quickActions", list);
+                    }}
+                    className="w-full rounded-lg border-2 border-dashed border-[#D1D5DB] py-2 text-xs font-medium text-[#6B7280] hover:border-[#7C3AED] hover:text-[#7C3AED] transition"
+                  >
+                    + Add Chip
+                  </button>
+                </div>
+              </section>
+            )}
 
             <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-[#E5E7EB]">
               <h2 className="text-base font-bold text-[#111827]">Allowed Domains</h2>
